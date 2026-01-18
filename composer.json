@@ -26,12 +26,13 @@
     "illuminate/support": "^12.0"
   },
   "require-dev": {
+    "doctrine/dbal": "^4.4",
+    "larastan/larastan": "^3.0",
+    "laravel/pint": "^1.18",
     "orchestra/testbench": "^10.0",
     "pestphp/pest": "^4.0",
     "pestphp/pest-plugin-laravel": "^4.0",
-    "larastan/larastan": "^3.0",
-    "phpunit/phpunit": "^12.0",
-    "laravel/pint": "^1.18"
+    "phpunit/phpunit": "^12.0"
   },
   "autoload": {
     "psr-4": {
