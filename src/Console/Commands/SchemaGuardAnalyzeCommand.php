@@ -29,7 +29,7 @@ class SchemaGuardAnalyzeCommand extends Command
 
     $specificMigration = $this->argument('migration');
 
-    if ($specificMigration) {
+    if ($specificMigration && is_string($specificMigration)) {
       return $this->analyzeSingleMigration($specificMigration, $analyzer, $safetyGuard);
     }
 
@@ -116,26 +116,49 @@ class SchemaGuardAnalyzeCommand extends Command
    */
   private function displayMigrationAnalysis(string $filename, array $operations, array $validation): void
   {
-    $dangerLevel = DangerLevel::from($validation['danger_level']->value);
+    $dangerLevelValue = $validation['danger_level'] ?? null;
+
+    if (!is_object($dangerLevelValue) || !property_exists($dangerLevelValue, 'value')) {
+      return;
+    }
+
+    $dangerLevel = DangerLevel::from($dangerLevelValue->value);
     $color = $dangerLevel->getColor();
 
     $this->line("📄 <fg={$color}>{$filename}</>");
     $this->line("   Danger Level: <fg={$color}>{$dangerLevel->value}</>");
 
-    if (!empty($validation['warnings'])) {
+    $warnings = $validation['warnings'] ?? [];
+    if (is_array($warnings) && !empty($warnings)) {
       $this->newLine();
       $this->warn('   Warnings:');
-      foreach ($validation['warnings'] as $warning) {
-        $this->line("   ⚠️  {$warning['operation']} (Line {$warning['line']})");
-        $this->line("      {$warning['message']}");
+      foreach ($warnings as $warning) {
+        if (!is_array($warning)) {
+          continue;
+        }
+
+        $operation = is_string($warning['operation'] ?? '') ? $warning['operation'] : '';
+        $line = is_scalar($warning['line'] ?? '') ? (string) $warning['line'] : '';
+        $message = is_string($warning['message'] ?? '') ? $warning['message'] : '';
+
+        $this->line("   ⚠️  {$operation} (Line {$line})");
+        $this->line("      {$message}");
       }
     }
 
-    if (!empty($validation['destructive_operations'])) {
+    $destructiveOps = $validation['destructive_operations'] ?? [];
+    if (is_array($destructiveOps) && !empty($destructiveOps)) {
       $this->newLine();
       $this->error('   Destructive Operations:');
-      foreach ($validation['destructive_operations'] as $operation) {
-        $this->line("   ❌ {$operation['description']} (Line {$operation['line_number']})");
+      foreach ($destructiveOps as $operation) {
+        if (!is_array($operation)) {
+          continue;
+        }
+
+        $description = is_string($operation['description'] ?? '') ? $operation['description'] : '';
+        $lineNumber = is_scalar($operation['line_number'] ?? '') ? (string) $operation['line_number'] : '';
+
+        $this->line("   ❌ {$description} (Line {$lineNumber})");
       }
     }
 

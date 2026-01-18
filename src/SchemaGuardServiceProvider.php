@@ -65,11 +65,12 @@ class SchemaGuardServiceProvider extends ServiceProvider
   {
     $this->app->bind(DatabaseAdapter::class, function ($app) {
       $driver = config('schema-guard.database.default', 'mysql');
+      $driverStr = is_string($driver) ? $driver : 'mysql';
 
-      return match ($driver) {
+      return match ($driverStr) {
         'mysql' => $app->make(MySQLAdapter::class),
         'pgsql' => $app->make(PostgreSQLAdapter::class),
-        default => throw new \InvalidArgumentException("Unsupported database driver: {$driver}"),
+        default => throw new \InvalidArgumentException("Unsupported database driver: {$driverStr}"),
       };
     });
 
@@ -84,11 +85,12 @@ class SchemaGuardServiceProvider extends ServiceProvider
   {
     $this->app->bind(SchemaInspector::class, function ($app) {
       $driver = config('schema-guard.database.default', 'mysql');
+      $driverStr = is_string($driver) ? $driver : 'mysql';
 
-      return match ($driver) {
+      return match ($driverStr) {
         'mysql' => $app->make(MySQLInspector::class),
         'pgsql' => $app->make(PostgreSQLInspector::class),
-        default => throw new \InvalidArgumentException("Unsupported database driver: {$driver}"),
+        default => throw new \InvalidArgumentException("Unsupported database driver: {$driverStr}"),
       };
     });
 

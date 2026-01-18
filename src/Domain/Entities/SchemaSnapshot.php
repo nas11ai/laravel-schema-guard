@@ -6,6 +6,15 @@ namespace Nas11ai\SchemaGuard\Domain\Entities;
 
 use Carbon\CarbonImmutable;
 
+/**
+ * @phpstan-import-type TableDefinitionArray from TableDefinition
+ * @phpstan-type SchemaSnapshotArray array{
+ *   created_at: string,
+ *   connection: string,
+ *   tables: array<array<string, mixed>>,
+ *   metadata?: array<string, mixed>
+ * }
+ */
 class SchemaSnapshot
 {
   /**
@@ -39,18 +48,22 @@ class SchemaSnapshot
   /**
    * Create from array representation.
    *
-   * @param array<string, mixed> $data
+   * @param array $data
+   * @phpstan-param SchemaSnapshotArray $data
    */
   public static function fromArray(array $data): self
   {
     $tables = array_map(
-      fn(array $table) => TableDefinition::fromArray($table),
-      $data['tables'] ?? []
+      function (array $table): TableDefinition {
+        /** @phpstan-var TableDefinitionArray $table */
+        return TableDefinition::fromArray($table);
+      },
+      $data['tables']
     );
 
     return new self(
       createdAt: CarbonImmutable::parse($data['created_at']),
-      connection: $data['connection'] ?? 'mysql',
+      connection: $data['connection'],
       tables: $tables,
       metadata: $data['metadata'] ?? [],
     );
@@ -66,14 +79,14 @@ class SchemaSnapshot
     return [
       'created_at' => $this->createdAt->toIso8601String(),
       'connection' => $this->connection,
-      'tables' => array_map(fn(TableDefinition $table) => $table->toArray(), $this->tables),
+      'tables' => array_map(
+        static fn(TableDefinition $table): array => $table->toArray(),
+        $this->tables
+      ),
       'metadata' => $this->metadata,
     ];
   }
 
-  /**
-   * Get a table by name.
-   */
   public function getTable(string $name): ?TableDefinition
   {
     foreach ($this->tables as $table) {
@@ -85,50 +98,45 @@ class SchemaSnapshot
     return null;
   }
 
-  /**
-   * Check if snapshot has a table.
-   */
   public function hasTable(string $name): bool
   {
     return $this->getTable($name) !== null;
   }
 
   /**
-   * Get all table names.
-   *
    * @return array<string>
    */
   public function getTableNames(): array
   {
-    return array_map(fn(TableDefinition $table) => $table->name, $this->tables);
+    return array_map(
+      static fn(TableDefinition $table): string => $table->name,
+      $this->tables
+    );
   }
 
-  /**
-   * Convert to JSON string.
-   */
   public function toJson(): string
   {
-    return json_encode($this->toArray(), JSON_PRETTY_PRINT);
+    return json_encode($this->toArray(), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
   }
 
-  /**
-   * Create from JSON string.
-   */
   public static function fromJson(string $json): self
   {
-    $data = json_decode($json, true);
+    /** @var SchemaSnapshotArray $data */
+    $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
 
     return self::fromArray($data);
   }
 
-  /**
-   * Get a hash of this snapshot for comparison.
-   */
   public function getHash(): string
   {
-    return md5(json_encode([
+    $json = json_encode([
       'connection' => $this->connection,
-      'tables' => array_map(fn(TableDefinition $table) => $table->getHash(), $this->tables),
-    ]));
+      'tables' => array_map(
+        static fn(TableDefinition $table): string => $table->getHash(),
+        $this->tables
+      ),
+    ], JSON_THROW_ON_ERROR);
+
+    return md5($json);
   }
 }

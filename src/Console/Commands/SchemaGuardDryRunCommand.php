@@ -33,7 +33,7 @@ class SchemaGuardDryRunCommand extends Command
 
     $specificMigration = $this->argument('migration');
 
-    if ($specificMigration) {
+    if ($specificMigration && is_string($specificMigration)) {
       return $this->dryRunSingleMigration($specificMigration, $adapter, $analyzer);
     }
 

@@ -23,7 +23,18 @@ class ColumnDefinition
   /**
    * Create from database metadata array.
    *
-   * @param array<string, mixed> $data
+   * @param array{
+   *   name?: string,
+   *   type?: string,
+   *   nullable?: bool,
+   *   default?: mixed,
+   *   comment?: string|null,
+   *   length?: int|null,
+   *   precision?: int|null,
+   *   scale?: int|null,
+   *   auto_increment?: bool,
+   *   collation?: string|null
+   * } $data
    */
   public static function fromArray(array $data): self
   {
@@ -75,6 +86,8 @@ class ColumnDefinition
    */
   public function getHash(): string
   {
-    return md5(json_encode($this->toArray()));
+    $json = json_encode($this->toArray(), JSON_THROW_ON_ERROR);
+
+    return md5($json);
   }
 }

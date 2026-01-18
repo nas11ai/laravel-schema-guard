@@ -39,10 +39,15 @@ class MigrationRepository
       return [];
     }
 
-    return DB::table($this->getMigrationTable())
+    /** @var array<string> $migrations */
+    $migrations = DB::table($this->getMigrationTable())
       ->orderBy('batch')
       ->pluck('migration')
+      // @phpstan-ignore-next-line
+      ->map(fn($value): string => (string) $value)
       ->toArray();
+
+    return $migrations;
   }
 
   /**
@@ -96,8 +101,9 @@ class MigrationRepository
       return 0;
     }
 
-    return DB::table($this->getMigrationTable())
-      ->max('batch') ?? 0;
+    $batch = DB::table($this->getMigrationTable())->max('batch');
+
+    return is_numeric($batch) ? (int) $batch : 0;
   }
 
   /**
@@ -111,10 +117,15 @@ class MigrationRepository
       return [];
     }
 
-    return DB::table($this->getMigrationTable())
+    /** @var array<string> $migrations */
+    $migrations = DB::table($this->getMigrationTable())
       ->where('batch', $batch)
       ->pluck('migration')
+      // @phpstan-ignore-next-line
+      ->map(fn($value): string => (string) $value)
       ->toArray();
+
+    return $migrations;
   }
 
   /**
@@ -132,6 +143,9 @@ class MigrationRepository
    */
   private function getMigrationTable(): string
   {
-    return config('database.migrations', 'migrations');
+    $configValue = config('database.migrations', 'migrations');
+    assert(is_string($configValue));
+
+    return $configValue;
   }
 }

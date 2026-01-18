@@ -23,7 +23,14 @@ class ForeignKeyDefinition
   /**
    * Create from database metadata array.
    *
-   * @param array<string, mixed> $data
+   * @param array{
+   *   name?: string,
+   *   columns?: array<string>,
+   *   foreign_table?: string,
+   *   foreign_columns?: array<string>,
+   *   on_update?: string|null,
+   *   on_delete?: string|null
+   * } $data
    */
   public static function fromArray(array $data): self
   {
@@ -67,6 +74,8 @@ class ForeignKeyDefinition
    */
   public function getHash(): string
   {
-    return md5(json_encode($this->toArray()));
+    $json = json_encode($this->toArray(), JSON_THROW_ON_ERROR);
+
+    return md5($json);
   }
 }

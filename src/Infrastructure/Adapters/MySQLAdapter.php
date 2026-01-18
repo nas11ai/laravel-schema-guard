@@ -14,7 +14,9 @@ class MySQLAdapter implements DatabaseAdapter
 
   public function __construct()
   {
-    $this->connection = DB::connection(config('schema-guard.database.default'));
+    $connectionName = config('schema-guard.database.default');
+    assert(is_string($connectionName) || is_null($connectionName));
+    $this->connection = DB::connection($connectionName);
   }
 
   /**
@@ -102,6 +104,7 @@ class MySQLAdapter implements DatabaseAdapter
 
     // Remove timestamp prefix (e.g., "2024_01_01_000000_")
     $className = preg_replace('/^\d{4}_\d{2}_\d{2}_\d{6}_/', '', $filename);
+    assert(is_string($className));
 
     // Convert to StudlyCase
     return str($className)->studly()->toString();
@@ -115,8 +118,16 @@ class MySQLAdapter implements DatabaseAdapter
   private function bindQueryParams(string $sql, array $bindings): string
   {
     foreach ($bindings as $binding) {
-      $value = is_string($binding) ? "'{$binding}'" : $binding;
-      $sql = preg_replace('/\?/', (string) $value, $sql, 1);
+      if (is_string($binding)) {
+        $value = "'{$binding}'";
+      } else {
+        assert(is_scalar($binding) || is_null($binding));
+        $value = (string) $binding;
+      }
+
+      $replaced = preg_replace('/\?/', $value, $sql, 1);
+      assert(is_string($replaced));
+      $sql = $replaced;
     }
 
     return $sql;

@@ -4,6 +4,18 @@ declare(strict_types=1);
 
 namespace Nas11ai\SchemaGuard\Domain\Entities;
 
+/**
+ * @phpstan-type TableDefinitionArray array{
+ *   name?: string,
+ *   columns?: array<int, array<string, mixed>>,
+ *   indexes?: array<int, array<string, mixed>>,
+ *   foreign_keys?: array<int, array<string, mixed>>,
+ *   engine?: string|null,
+ *   collation?: string|null,
+ *   comment?: string|null
+ * }
+ */
+
 class TableDefinition
 {
   /**
@@ -25,24 +37,31 @@ class TableDefinition
   /**
    * Create from database metadata array.
    *
-   * @param array<string, mixed> $data
+   * @param array $data
+   * @phpstan-param TableDefinitionArray $data
    */
   public static function fromArray(array $data): self
   {
-    $columns = array_map(
-      fn(array $col) => ColumnDefinition::fromArray($col),
-      $data['columns'] ?? []
-    );
+    /** @var array<ColumnDefinition> $columns */
+    $columns = [];
+    foreach ($data['columns'] ?? [] as $col) {
+      // @phpstan-ignore-next-line
+      $columns[] = ColumnDefinition::fromArray($col);
+    }
 
-    $indexes = array_map(
-      fn(array $idx) => IndexDefinition::fromArray($idx),
-      $data['indexes'] ?? []
-    );
+    /** @var array<IndexDefinition> $indexes */
+    $indexes = [];
+    foreach ($data['indexes'] ?? [] as $idx) {
+      // @phpstan-ignore-next-line
+      $indexes[] = IndexDefinition::fromArray($idx);
+    }
 
-    $foreignKeys = array_map(
-      fn(array $fk) => ForeignKeyDefinition::fromArray($fk),
-      $data['foreign_keys'] ?? []
-    );
+    /** @var array<ForeignKeyDefinition> $foreignKeys */
+    $foreignKeys = [];
+    foreach ($data['foreign_keys'] ?? [] as $fk) {
+      // @phpstan-ignore-next-line
+      $foreignKeys[] = ForeignKeyDefinition::fromArray($fk);
+    }
 
     return new self(
       name: $data['name'] ?? '',
@@ -64,9 +83,18 @@ class TableDefinition
   {
     return [
       'name' => $this->name,
-      'columns' => array_map(fn(ColumnDefinition $col) => $col->toArray(), $this->columns),
-      'indexes' => array_map(fn(IndexDefinition $idx) => $idx->toArray(), $this->indexes),
-      'foreign_keys' => array_map(fn(ForeignKeyDefinition $fk) => $fk->toArray(), $this->foreignKeys),
+      'columns' => array_map(
+        static fn(ColumnDefinition $col): array => $col->toArray(),
+        $this->columns
+      ),
+      'indexes' => array_map(
+        static fn(IndexDefinition $idx): array => $idx->toArray(),
+        $this->indexes
+      ),
+      'foreign_keys' => array_map(
+        static fn(ForeignKeyDefinition $fk): array => $fk->toArray(),
+        $this->foreignKeys
+      ),
       'engine' => $this->engine,
       'collation' => $this->collation,
       'comment' => $this->comment,
@@ -102,7 +130,10 @@ class TableDefinition
    */
   public function getColumnNames(): array
   {
-    return array_map(fn(ColumnDefinition $col) => $col->name, $this->columns);
+    return array_map(
+      static fn(ColumnDefinition $col): string => $col->name,
+      $this->columns
+    );
   }
 
   /**
@@ -110,6 +141,8 @@ class TableDefinition
    */
   public function getHash(): string
   {
-    return md5(json_encode($this->toArray()));
+    $json = json_encode($this->toArray(), JSON_THROW_ON_ERROR);
+
+    return md5($json);
   }
 }

@@ -53,7 +53,7 @@ class PostgreSQLInspector implements SchemaInspector
       columns: $columns,
       indexes: $indexes,
       foreignKeys: $foreignKeys,
-      comment: $tableInfo['comment'] ?? null,
+      comment: isset($tableInfo['comment']) && is_string($tableInfo['comment']) ? $tableInfo['comment'] : null,
     );
   }
 
@@ -65,6 +65,7 @@ class PostgreSQLInspector implements SchemaInspector
   public function getTableNames(?string $schema = null): array
   {
     $excludedTables = config('schema-guard.drift_detection.excluded_tables', []);
+    assert(is_array($excludedTables));
 
     // Use Laravel 12 Schema::getTableListing() which returns schema-qualified names by default
     $tables = Schema::getTableListing(schema: $schema ?? 'public', schemaQualified: false);
@@ -87,7 +88,11 @@ class PostgreSQLInspector implements SchemaInspector
   {
     $result = DB::selectOne('SELECT current_schema() as schema');
 
-    return $result->schema ?? 'public';
+    if (!is_object($result) || !property_exists($result, 'schema')) {
+      return 'public';
+    }
+
+    return is_string($result->schema) ? $result->schema : 'public';
   }
 
   /**
@@ -98,6 +103,8 @@ class PostgreSQLInspector implements SchemaInspector
   private function getColumns(string $tableName): array
   {
     $connection = DB::connection();
+
+    // @phpstan-ignore-next-line
     $columns = $connection->getDoctrineSchemaManager()->listTableColumns($tableName);
     $definitions = [];
 
@@ -126,6 +133,8 @@ class PostgreSQLInspector implements SchemaInspector
   private function getIndexes(string $tableName): array
   {
     $connection = DB::connection();
+
+    // @phpstan-ignore-next-line
     $indexes = $connection->getDoctrineSchemaManager()->listTableIndexes($tableName);
     $definitions = [];
 
@@ -149,6 +158,8 @@ class PostgreSQLInspector implements SchemaInspector
   private function getForeignKeys(string $tableName): array
   {
     $connection = DB::connection();
+
+    // @phpstan-ignore-next-line
     $foreignKeys = $connection->getDoctrineSchemaManager()->listTableForeignKeys($tableName);
     $definitions = [];
 
@@ -180,12 +191,12 @@ class PostgreSQLInspector implements SchemaInspector
       [$schema, $tableName]
     );
 
-    if (!$result) {
+    if (!is_object($result)) {
       return [];
     }
 
     return [
-      'comment' => $result->comment,
+      'comment' => property_exists($result, 'comment') ? $result->comment : null,
     ];
   }
 }

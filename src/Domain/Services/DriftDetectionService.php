@@ -7,6 +7,7 @@ namespace Nas11ai\SchemaGuard\Domain\Services;
 use Nas11ai\SchemaGuard\Contracts\DriftDetector;
 use Nas11ai\SchemaGuard\Contracts\SchemaInspector;
 use Nas11ai\SchemaGuard\Domain\Entities\SchemaSnapshot;
+use Nas11ai\SchemaGuard\Domain\Entities\TableDefinition;
 use Nas11ai\SchemaGuard\Infrastructure\Repositories\SchemaRepository;
 
 class DriftDetectionService implements DriftDetector
@@ -45,6 +46,7 @@ class DriftDetectionService implements DriftDetector
   {
     $tables = $this->inspector->getTables();
     $connection = config('schema-guard.database.default', 'mysql');
+    assert(is_string($connection));
 
     return SchemaSnapshot::create($connection, $tables, [
       'table_count' => count($tables),
@@ -119,7 +121,7 @@ class DriftDetectionService implements DriftDetector
   {
     $drift = $this->detectDrift();
 
-    return $drift['has_drift'] ?? false;
+    return (bool) ($drift['has_drift'] ?? false);
   }
 
   /**
@@ -127,7 +129,7 @@ class DriftDetectionService implements DriftDetector
    *
    * @return array<string, mixed>
    */
-  private function compareTableDefinitions($expected, $actual): array
+  private function compareTableDefinitions(TableDefinition $expected, TableDefinition $actual): array
   {
     $diff = [];
 
@@ -175,13 +177,15 @@ class DriftDetectionService implements DriftDetector
    */
   private function generateDriftSummary(array $drift): array
   {
+    $addedTables = is_array($drift['added_tables']) ? $drift['added_tables'] : [];
+    $removedTables = is_array($drift['removed_tables']) ? $drift['removed_tables'] : [];
+    $modifiedTables = is_array($drift['modified_tables']) ? $drift['modified_tables'] : [];
+
     return [
-      'tables_added' => count($drift['added_tables']),
-      'tables_removed' => count($drift['removed_tables']),
-      'tables_modified' => count($drift['modified_tables']),
-      'total_changes' => count($drift['added_tables']) +
-        count($drift['removed_tables']) +
-        count($drift['modified_tables']),
+      'tables_added' => count($addedTables),
+      'tables_removed' => count($removedTables),
+      'tables_modified' => count($modifiedTables),
+      'total_changes' => count($addedTables) + count($removedTables) + count($modifiedTables),
     ];
   }
 }

@@ -53,9 +53,9 @@ class MySQLInspector implements SchemaInspector
       columns: $columns,
       indexes: $indexes,
       foreignKeys: $foreignKeys,
-      engine: $tableInfo['engine'] ?? null,
-      collation: $tableInfo['collation'] ?? null,
-      comment: $tableInfo['comment'] ?? null,
+      engine: isset($tableInfo['engine']) && is_string($tableInfo['engine']) ? $tableInfo['engine'] : null,
+      collation: isset($tableInfo['collation']) && is_string($tableInfo['collation']) ? $tableInfo['collation'] : null,
+      comment: isset($tableInfo['comment']) && is_string($tableInfo['comment']) ? $tableInfo['comment'] : null,
     );
   }
 
@@ -67,6 +67,7 @@ class MySQLInspector implements SchemaInspector
   public function getTableNames(?string $schema = null): array
   {
     $excludedTables = config('schema-guard.drift_detection.excluded_tables', []);
+    assert(is_array($excludedTables));
 
     // Use Laravel 12 Schema::getTableListing() which returns schema-qualified names by default
     $tables = Schema::getTableListing(schema: $schema, schemaQualified: false);
@@ -89,7 +90,11 @@ class MySQLInspector implements SchemaInspector
   {
     $result = DB::selectOne('SELECT DATABASE() as db');
 
-    return $result->db ?? '';
+    if (!is_object($result) || !property_exists($result, 'db')) {
+      return '';
+    }
+
+    return is_string($result->db) ? $result->db : '';
   }
 
   /**
@@ -100,6 +105,8 @@ class MySQLInspector implements SchemaInspector
   private function getColumns(string $tableName): array
   {
     $connection = DB::connection();
+
+    // @phpstan-ignore-next-line
     $columns = $connection->getDoctrineSchemaManager()->listTableColumns($tableName);
     $definitions = [];
 
@@ -129,6 +136,8 @@ class MySQLInspector implements SchemaInspector
   private function getIndexes(string $tableName): array
   {
     $connection = DB::connection();
+
+    // @phpstan-ignore-next-line
     $indexes = $connection->getDoctrineSchemaManager()->listTableIndexes($tableName);
     $definitions = [];
 
@@ -152,6 +161,8 @@ class MySQLInspector implements SchemaInspector
   private function getForeignKeys(string $tableName): array
   {
     $connection = DB::connection();
+
+    // @phpstan-ignore-next-line
     $foreignKeys = $connection->getDoctrineSchemaManager()->listTableForeignKeys($tableName);
     $definitions = [];
 
@@ -185,14 +196,14 @@ class MySQLInspector implements SchemaInspector
       [$database, $tableName]
     );
 
-    if (!$result) {
+    if (!is_object($result)) {
       return [];
     }
 
     return [
-      'engine' => $result->engine,
-      'collation' => $result->collation,
-      'comment' => $result->comment,
+      'engine' => property_exists($result, 'engine') ? $result->engine : null,
+      'collation' => property_exists($result, 'collation') ? $result->collation : null,
+      'comment' => property_exists($result, 'comment') ? $result->comment : null,
     ];
   }
 }

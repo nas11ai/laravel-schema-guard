@@ -13,7 +13,9 @@ class SchemaRepository
 
   public function __construct()
   {
-    $this->snapshotPath = config('schema-guard.drift_detection.snapshot_path');
+    $path = config('schema-guard.drift_detection.snapshot_path');
+    assert(is_string($path));
+    $this->snapshotPath = $path;
     $this->ensureDirectoryExists();
   }
 

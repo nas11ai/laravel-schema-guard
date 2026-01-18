@@ -59,8 +59,15 @@ class SchemaGuardCheckCommand extends Command
     $saved = $repository->saveSnapshot($snapshot);
 
     if ($saved) {
+      $tableCount = $snapshot->metadata['table_count'] ?? 0;
+
+      if (!is_int($tableCount)) {
+        assert(is_numeric($tableCount));
+        $tableCount = (int) $tableCount;
+      }
+
       $this->info('✅ Schema snapshot saved successfully!');
-      $this->info("   Tables: {$snapshot->metadata['table_count']}");
+      $this->info('   Tables: ' . $tableCount);
       $this->info("   Connection: {$snapshot->connection}");
 
       return self::SUCCESS;
@@ -82,37 +89,58 @@ class SchemaGuardCheckCommand extends Command
     $this->newLine();
 
     $summary = $drift['summary'] ?? [];
+    assert(is_array($summary));
 
-    if ($summary['tables_added'] > 0) {
-      $this->warn("📊 Tables Added: {$summary['tables_added']}");
-      foreach ($drift['added_tables'] as $table) {
+    $tablesAdded = is_int($summary['tables_added'] ?? 0) ? $summary['tables_added'] : 0;
+    $tablesRemoved = is_int($summary['tables_removed'] ?? 0) ? $summary['tables_removed'] : 0;
+    $tablesModified = is_int($summary['tables_modified'] ?? 0) ? $summary['tables_modified'] : 0;
+
+    if ($tablesAdded > 0) {
+      $this->warn("📊 Tables Added: {$tablesAdded}");
+      $addedTables = $drift['added_tables'] ?? [];
+      assert(is_array($addedTables));
+      foreach ($addedTables as $table) {
+        if (!is_string($table)) {
+          assert(is_scalar($table));
+          $table = (string) $table;
+        }
         $this->line("   • {$table}");
       }
       $this->newLine();
     }
 
-    if ($summary['tables_removed'] > 0) {
-      $this->error("📊 Tables Removed: {$summary['tables_removed']}");
-      foreach ($drift['removed_tables'] as $table) {
+    if ($tablesRemoved > 0) {
+      $this->error("📊 Tables Removed: {$tablesRemoved}");
+      $removedTables = $drift['removed_tables'] ?? [];
+      assert(is_array($removedTables));
+      foreach ($removedTables as $table) {
+        if (!is_string($table)) {
+          assert(is_scalar($table));
+          $table = (string) $table;
+        }
         $this->line("   • {$table}");
       }
       $this->newLine();
     }
 
-    if ($summary['tables_modified'] > 0) {
-      $this->warn("📊 Tables Modified: {$summary['tables_modified']}");
-      foreach ($drift['modified_tables'] as $tableName => $changes) {
-        $this->line("   • {$tableName}");
+    if ($tablesModified > 0) {
+      $this->warn("📊 Tables Modified: {$tablesModified}");
+      $modifiedTables = $drift['modified_tables'] ?? [];
+      assert(is_array($modifiedTables));
+      foreach ($modifiedTables as $tableName => $changes) {
+        assert(is_array($changes));
+        $tableNameStr = is_string($tableName) ? $tableName : (string) $tableName;
+        $this->line("   • {$tableNameStr}");
 
-        if (isset($changes['added_columns'])) {
+        if (isset($changes['added_columns']) && is_array($changes['added_columns'])) {
           $this->line("      Added columns: " . implode(', ', $changes['added_columns']));
         }
 
-        if (isset($changes['removed_columns'])) {
+        if (isset($changes['removed_columns']) && is_array($changes['removed_columns'])) {
           $this->line("      Removed columns: " . implode(', ', $changes['removed_columns']));
         }
 
-        if (isset($changes['modified_columns'])) {
+        if (isset($changes['modified_columns']) && is_array($changes['modified_columns'])) {
           $this->line("      Modified columns: " . implode(', ', array_keys($changes['modified_columns'])));
         }
       }
