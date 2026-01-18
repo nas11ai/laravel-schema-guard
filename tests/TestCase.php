@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nas11ai\SchemaGuard\Tests;
 
+use Nas11ai\SchemaGuard\SchemaGuardServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -20,7 +21,7 @@ abstract class TestCase extends Orchestra
   protected function getPackageProviders($app): array
   {
     return [
-      // TODO: Replace with the package's service provider
+      SchemaGuardServiceProvider::class,
     ];
   }
 
