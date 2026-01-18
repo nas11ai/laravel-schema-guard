@@ -1,0 +1,76 @@
+{
+  "name": "nas11ai/schema-guard",
+  "description": "Laravel Schema Drift Detector and Migration Safety Guard - Protect your database from destructive migrations",
+  "keywords": [
+    "laravel",
+    "database",
+    "schema",
+    "migration",
+    "drift-detection",
+    "safety-guard",
+    "mysql",
+    "postgresql"
+  ],
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Nasa'i",
+      "email": "kairupannasai@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^8.3",
+    "illuminate/console": "^12.0",
+    "illuminate/database": "^12.0",
+    "illuminate/support": "^12.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^10.0",
+    "pestphp/pest": "^4.0",
+    "pestphp/pest-plugin-laravel": "^4.0",
+    "larastan/larastan": "^3.0",
+    "phpunit/phpunit": "^12.0",
+    "laravel/pint": "^1.18"
+  },
+  "autoload": {
+    "psr-4": {
+      "Nas11ai\\SchemaGuard\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Nas11ai\\SchemaGuard\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/pest",
+    "test-coverage": "vendor/bin/pest --coverage",
+    "test-coverage-html": "vendor/bin/pest --coverage --coverage-html=build/coverage",
+    "analyse": "vendor/bin/phpstan analyse",
+    "analyse-baseline": "vendor/bin/phpstan analyse --generate-baseline",
+    "analyse-clear": "vendor/bin/phpstan clear-result-cache && vendor/bin/phpstan analyse",
+    "format": "vendor/bin/pint",
+    "format-test": "vendor/bin/pint --test",
+    "ci": [
+      "@format-test",
+      "@analyse",
+      "@test"
+    ]
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Nas11ai\\SchemaGuard\\SchemaGuardServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
