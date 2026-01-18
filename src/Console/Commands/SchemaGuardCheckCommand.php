@@ -35,7 +35,14 @@ class SchemaGuardCheckCommand extends Command
     // Detect drift
     $drift = $detector->detectDrift();
 
-    if (!$drift['has_drift']) {
+    if (!isset($drift['has_drift']) || !$drift['has_drift']) {
+      // Check if there's a message about no baseline
+      $message = $drift['message'] ?? null;
+      if (is_string($message) && str_contains($message, 'No baseline')) {
+        $this->info($message);
+        return self::SUCCESS;
+      }
+
       $this->info('✅ No schema drift detected!');
       $this->info('Your database schema matches the expected state.');
 

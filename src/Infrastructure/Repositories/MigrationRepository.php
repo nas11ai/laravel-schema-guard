@@ -144,7 +144,9 @@ class MigrationRepository
   private function getMigrationTable(): string
   {
     $configValue = config('database.migrations', 'migrations');
-    assert(is_string($configValue));
+    if (!is_string($configValue)) {
+      $configValue = 'migrations';
+    }
 
     return $configValue;
   }
