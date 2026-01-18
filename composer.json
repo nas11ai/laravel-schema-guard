@@ -41,8 +41,12 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "Nas11ai\\SchemaGuard\\Tests\\": "tests/"
-    }
+      "Nas11ai\\SchemaGuard\\Tests\\": "tests/",
+      "Nas11ai\\SchemaGuard\\Tests\\Helpers\\": "tests/Helpers/"
+    },
+    "files": [
+      "tests/Datasets.php"
+    ]
   },
   "scripts": {
     "test": "vendor/bin/pest",
