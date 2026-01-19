@@ -3,19 +3,27 @@
 declare(strict_types=1);
 
 use Nas11ai\SchemaGuard\Tests\TestCase;
+use Nas11ai\SchemaGuard\Tests\Unit\UnitTestCase;
 
 /*
 |--------------------------------------------------------------------------
-| Test Case
+| Test Case Bindings
 |--------------------------------------------------------------------------
 |
-| The closure you provide to your test functions is always bound to a specific PHPUnit test
-| case class. By default, that class is "PHPUnit\Framework\TestCase". Of course, you may
-| need to change it using the "uses()" function to bind a different classes or traits.
+| The pest() function allows you to bind specific test case classes to
+| different test directories. This provides proper base functionality
+| and helpers for each test type.
 |
 */
 
-uses(TestCase::class)->in('Feature', 'Unit', 'Integration');
+// Unit Tests - Pure PHPUnit tests with mocked dependencies
+// Uses UnitTestCase which extends PHPUnit\Framework\TestCase directly
+pest()->extend(UnitTestCase::class)->in('Unit');
+
+uses()
+  ->beforeEach(fn() => Mockery::getConfiguration()->allowMockingNonExistentMethods(false))
+  ->afterEach(fn() => Mockery::close())
+  ->in('Unit');
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +38,35 @@ uses(TestCase::class)->in('Feature', 'Unit', 'Integration');
 
 expect()->extend('toBeOne', function () {
   return $this->toBe(1);
+});
+
+expect()->extend('toBeValidSnapshot', function () {
+  expect($this->value)
+    ->toBeInstanceOf(\Nas11ai\SchemaGuard\Domain\Entities\SchemaSnapshot::class)
+    ->and($this->value->connection)->toBeString()
+    ->and($this->value->tables)->toBeArray()
+    ->and($this->value->createdAt)->toBeInstanceOf(\Carbon\CarbonImmutable::class);
+
+  return $this;
+});
+
+expect()->extend('toBeValidTableDefinition', function () {
+  expect($this->value)
+    ->toBeInstanceOf(\Nas11ai\SchemaGuard\Domain\Entities\TableDefinition::class)
+    ->and($this->value->name)->toBeString()
+    ->and($this->value->columns)->toBeArray();
+
+  return $this;
+});
+
+expect()->extend('toBeValidMigrationOperation', function () {
+  expect($this->value)
+    ->toBeInstanceOf(\Nas11ai\SchemaGuard\Domain\Entities\MigrationOperation::class)
+    ->and($this->value->type)->toBeInstanceOf(\Nas11ai\SchemaGuard\Domain\ValueObjects\OperationType::class)
+    ->and($this->value->tableName)->toBeString()
+    ->and($this->value->lineNumber)->toBeInt();
+
+  return $this;
 });
 
 /*
@@ -48,6 +85,27 @@ function skipIfNotDriver(string $driver): void
 {
   if (DB::getDriverName() !== $driver) {
     test()->markTestSkipped("{$driver} tests require {$driver} database");
+  }
+}
+
+/**
+ * Create a temporary test file.
+ */
+function createTempFile(string $content = '', string $extension = 'txt'): string
+{
+  $tempFile = tempnam(sys_get_temp_dir(), 'test_') . '.' . $extension;
+  file_put_contents($tempFile, $content);
+
+  return $tempFile;
+}
+
+/**
+ * Delete a temporary file.
+ */
+function deleteTempFile(string $path): void
+{
+  if (file_exists($path)) {
+    unlink($path);
   }
 }
 

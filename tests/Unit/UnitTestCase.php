@@ -1,28 +1,46 @@
 <?php
 
-declare(strict_types=1);
+namespace Nas11ai\SchemaGuard\Tests\Unit;
 
-namespace Nas11ai\SchemaGuard\Tests;
-
-use Nas11ai\SchemaGuard\SchemaGuardServiceProvider;
+use Illuminate\Database\Migrations\Migrator;
+use Nas11ai\SchemaGuard\Infrastructure\Repositories\MigrationRepository;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Nas11ai\SchemaGuard\SchemaGuardServiceProvider;
+use Mockery\MockInterface;
 
-abstract class TestCase extends Orchestra
+/**
+ * @property Migrator|MockInterface $migrator
+ * @property MigrationRepository $repository
+ */
+
+class UnitTestCase extends Orchestra
 {
-  /**
-   * @param \Illuminate\Foundation\Application $app
-   * @return array<int, class-string>
-   */
-  protected function getPackageProviders($app): array
+  public Migrator|MockInterface $migrator;
+  public MigrationRepository $repository;
+  protected function setUp(): void
+  {
+    parent::setUp();
+
+    // Membuat direktori migrations sementara untuk testing
+    if (!file_exists(__DIR__ . '/tmp/migrations')) {
+      mkdir(__DIR__ . '/tmp/migrations', 0777, true);
+    }
+  }
+
+  protected function tearDown(): void
+  {
+    // Hapus file sementara setelah test selesai
+    array_map('unlink', glob(__DIR__ . '/tmp/migrations/*.php'));
+    parent::tearDown();
+  }
+
+  protected function getPackageProviders($app)
   {
     return [
       SchemaGuardServiceProvider::class,
     ];
   }
 
-  /**
-   * @param \Illuminate\Foundation\Application $app
-   */
   protected function getEnvironmentSetUp($app): void
   {
     // Setup default database to use sqlite :memory:
@@ -60,5 +78,11 @@ abstract class TestCase extends Orchestra
       'schema' => 'public',
       'sslmode' => 'prefer',
     ]);
+  }
+
+  protected function defineDatabaseMigrations()
+  {
+    // Menjalankan migrasi bawaan Laravel (membuat tabel migrations)
+    $this->loadLaravelMigrations();
   }
 }

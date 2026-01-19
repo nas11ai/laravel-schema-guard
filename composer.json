@@ -1,81 +1,98 @@
 {
-  "name": "nas11ai/schema-guard",
-  "description": "Laravel Schema Drift Detector and Migration Safety Guard - Protect your database from destructive migrations",
-  "keywords": [
-    "laravel",
-    "database",
-    "schema",
-    "migration",
-    "drift-detection",
-    "safety-guard",
-    "mysql",
-    "postgresql"
-  ],
-  "type": "library",
-  "license": "MIT",
-  "authors": [
-    {
-      "name": "Nasa'i",
-      "email": "kairupannasai@gmail.com"
-    }
-  ],
-  "require": {
-    "php": "^8.3",
-    "illuminate/console": "^12.0",
-    "illuminate/database": "^12.0",
-    "illuminate/support": "^12.0"
-  },
-  "require-dev": {
-    "doctrine/dbal": "^4.4",
-    "larastan/larastan": "^3.0",
-    "laravel/pint": "^1.18",
-    "orchestra/testbench": "^10.0",
-    "pestphp/pest": "^4.0",
-    "pestphp/pest-plugin-laravel": "^4.0",
-    "phpunit/phpunit": "^12.0"
-  },
-  "autoload": {
-    "psr-4": {
-      "Nas11ai\\SchemaGuard\\": "src/"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "Nas11ai\\SchemaGuard\\Tests\\": "tests/",
-      "Nas11ai\\SchemaGuard\\Tests\\Helpers\\": "tests/Helpers/"
+    "name": "nas11ai/schema-guard",
+    "description": "Laravel Schema Drift Detector and Migration Safety Guard - Protect your database from destructive migrations",
+    "keywords": [
+        "laravel",
+        "database",
+        "schema",
+        "migration",
+        "drift-detection",
+        "safety-guard",
+        "mysql",
+        "postgresql"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Nasa'i",
+            "email": "kairupannasai@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "illuminate/console": "^12.0",
+        "illuminate/database": "^12.0",
+        "illuminate/support": "^12.0"
     },
-    "files": [
-      "tests/Datasets.php"
-    ]
-  },
-  "scripts": {
-    "test": "vendor/bin/pest",
-    "test-coverage": "vendor/bin/pest --coverage",
-    "test-coverage-html": "vendor/bin/pest --coverage --coverage-html=build/coverage",
-    "analyse": "vendor/bin/phpstan analyse",
-    "analyse-baseline": "vendor/bin/phpstan analyse --generate-baseline",
-    "analyse-clear": "vendor/bin/phpstan clear-result-cache && vendor/bin/phpstan analyse",
-    "format": "vendor/bin/pint",
-    "format-test": "vendor/bin/pint --test",
-    "ci": [
-      "@format-test",
-      "@analyse",
-      "@test"
-    ]
-  },
-  "config": {
-    "sort-packages": true,
-    "allow-plugins": {
-      "pestphp/pest-plugin": true
-    }
-  },
-  "extra": {
-    "laravel": {
-      "providers": [
-        "Nas11ai\\SchemaGuard\\SchemaGuardServiceProvider"
-      ]
-    }
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true
+    "require-dev": {
+        "doctrine/dbal": "^4.4",
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.18",
+        "mockery/mockery": "^1.6",
+        "orchestra/testbench": "^10.0",
+        "pestphp/pest": "^4.0",
+        "pestphp/pest-plugin-laravel": "^4.0",
+        "phpunit/phpunit": "^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Nas11ai\\SchemaGuard\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Nas11ai\\SchemaGuard\\Tests\\": "tests/",
+            "Nas11ai\\SchemaGuard\\Tests\\Helpers\\": "tests/Helpers/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "test-coverage-html": "vendor/bin/pest --coverage --coverage-html=build/coverage",
+        "analyse": "vendor/bin/phpstan analyse",
+        "analyse-baseline": "vendor/bin/phpstan analyse --generate-baseline",
+        "analyse-clear": "vendor/bin/phpstan clear-result-cache && vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint",
+        "format-test": "vendor/bin/pint --test",
+        "ci": [
+            "@format-test",
+            "@analyse",
+            "@test"
+        ],
+        "post-autoload-dump": [
+            "@clear",
+            "@prepare"
+        ],
+        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@build",
+            "@php vendor/bin/testbench serve --ansi"
+        ],
+        "lint": [
+            "@php vendor/bin/pint --ansi",
+            "@php vendor/bin/phpstan analyse --verbose --ansi"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Nas11ai\\SchemaGuard\\SchemaGuardServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
