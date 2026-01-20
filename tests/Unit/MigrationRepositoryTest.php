@@ -3,51 +3,131 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migrator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Schema;
 use Nas11ai\SchemaGuard\Infrastructure\Repositories\MigrationRepository;
 use Nas11ai\SchemaGuard\Tests\Unit\UnitTestCase;
 use Mockery\MockInterface;
 
 beforeEach(function () {
-    /** @var UnitTestCase $this */
-    
-    /** @var Migrator|MockInterface $migrator */
-    $migrator = Mockery::mock(Migrator::class);
-    $this->migrator = $migrator;
+  /** @var UnitTestCase $this */
+  Config::set('database.migrations', 'migrations');
 
-    $this->repository = new MigrationRepository($this->migrator);
+  $this->migrator = Mockery::mock(Migrator::class);
+  $this->repository = new MigrationRepository($this->migrator);
 });
 
-it('can get all migrations from file system', function () {
-    /** @var UnitTestCase $this */
-    $paths = ['/database/migrations'];
+afterEach(function () {
+  /** @var UnitTestCase $this */
+  Schema::dropIfExists('migrations');
+  Schema::dropIfExists('custom_table');
+});
 
-    $this->migrator->shouldReceive('paths')->andReturn(...[$paths]);
+it('can get all migration files from multiple paths', function () {
+  /** @var UnitTestCase $this */
+  $paths = ['/path/one'];
+  $this->migrator->shouldReceive('paths')->andReturn(...[$paths]);
 
-    File::shouldReceive('exists')->with('/database/migrations')->andReturn(true);
+  File::shouldReceive('exists')->andReturn(true);
+  $mockFile = Mockery::mock(\Symfony\Component\Finder\SplFileInfo::class);
+  $mockFile->shouldReceive('getExtension')->andReturn('php');
+  $mockFile->shouldReceive('getRealPath')->andReturn('/path/one/test.php');
 
-    /** @var \Symfony\Component\Finder\SplFileInfo|MockInterface $mockFile */
-    $mockFile = Mockery::mock(\Symfony\Component\Finder\SplFileInfo::class);
-    $mockFile->shouldReceive('getExtension')->andReturn('php');
-    $mockFile->shouldReceive('getRealPath')->andReturn('/database/migrations/2023_01_01_table.php');
+  File::shouldReceive('files')->andReturn(...[[$mockFile]]);
 
-    File::shouldReceive('files')->with('/database/migrations')->andReturn(...[[$mockFile]]);
+  expect($this->repository->getAllMigrations())->toHaveCount(1);
+});
 
-    $result = $this->repository->getAllMigrations();
+it('returns empty array if migration table does not exist', function () {
+  /** @var UnitTestCase $this */
+  // Don't create the table at all for this test
+  expect($this->repository->getRanMigrations())->toBe([]);
+});
 
-    expect($result)->toBeArray()->toHaveCount(1);
+it('can get list of ran migrations from database', function () {
+  /** @var UnitTestCase $this */
+
+  // Create table for this test
+  Schema::create('migrations', function ($table) {
+    $table->string('migration');
+    $table->integer('batch');
+  });
+
+  DB::table('migrations')->insert([
+    'migration' => 'migration_1',
+    'batch' => 1,
+  ]);
+
+  expect($this->repository->getRanMigrations())->toBe(['migration_1']);
 });
 
 it('calculates pending migrations correctly', function () {
-    /** @var UnitTestCase $this */
-    
-    /** @var MigrationRepository|MockInterface $repo */
-    $repo = Mockery::mock(MigrationRepository::class, [$this->migrator])->makePartial();
+  /** @var UnitTestCase $this */
+  /** @var MigrationRepository|MockInterface $repo */
+  $repo = Mockery::mock(MigrationRepository::class, [$this->migrator])->makePartial();
 
-    $repo->shouldReceive('getRanMigrations')->andReturn(...[['migration_1']]);
-    $repo->shouldReceive('getAllMigrations')->andReturn(...[['migration_1', 'migration_2']]);
+  $repo->shouldReceive('getRanMigrations')->andReturn(...[['exists']]);
+  $repo->shouldReceive('getAllMigrations')->andReturn(...[['exists', 'new']]);
 
-    $pending = $repo->getPendingMigrations();
+  expect($repo->getPendingMigrations())->toBe(['new']);
+});
 
-    expect($pending)->toBe(['migration_2']);
+it('returns zero for last batch if migration table is missing', function () {
+  /** @var UnitTestCase $this */
+  // Don't create the table at all for this test
+  expect($this->repository->getLastBatchNumber())->toBe(0);
+});
+
+it('returns the maximum batch number from database', function () {
+  /** @var UnitTestCase $this */
+
+  // Create table for this test
+  Schema::create('migrations', function ($table) {
+    $table->string('migration');
+    $table->integer('batch');
+  });
+
+  DB::table('migrations')->insert([
+    ['migration' => 'm1', 'batch' => 1],
+    ['migration' => 'm2', 'batch' => 3],
+  ]);
+
+  expect($this->repository->getLastBatchNumber())->toBe(3);
+});
+
+it('can get migrations only from a specific batch', function () {
+  /** @var UnitTestCase $this */
+
+  // Create table for this test
+  Schema::create('migrations', function ($table) {
+    $table->string('migration');
+    $table->integer('batch');
+  });
+
+  DB::table('migrations')->insert([
+    ['migration' => 'm1', 'batch' => 1],
+    ['migration' => 'm2', 'batch' => 2],
+  ]);
+
+  expect($this->repository->getMigrationsFromBatch(1))->toBe(['m1']);
+});
+
+it('uses custom migration table name from config if available', function () {
+  /** @var UnitTestCase $this */
+
+  Schema::create('custom_table', function ($table) {
+    $table->string('migration');
+    $table->integer('batch');
+  });
+
+  Config::set('database.migrations', 'custom_table');
+
+  DB::table('custom_table')->insert([
+    'migration' => 'custom_m1',
+    'batch' => 1,
+  ]);
+
+  expect($this->repository->getLastBatchNumber())->toBe(1);
 });
