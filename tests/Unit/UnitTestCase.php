@@ -4,6 +4,7 @@ namespace Nas11ai\SchemaGuard\Tests\Unit;
 
 use Illuminate\Database\Migrations\Migrator;
 use Nas11ai\SchemaGuard\Infrastructure\Repositories\MigrationRepository;
+use Nas11ai\SchemaGuard\Infrastructure\Repositories\SchemaRepository;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Nas11ai\SchemaGuard\SchemaGuardServiceProvider;
 use Mockery\MockInterface;
@@ -11,6 +12,8 @@ use Mockery\MockInterface;
 /**
  * @property Migrator|MockInterface $migrator
  * @property MigrationRepository $repository
+ * @property SchemaRepository $schemaRepository
+ * @property string $snapshotPath
  */
 
 class UnitTestCase extends Orchestra
@@ -78,5 +81,8 @@ class UnitTestCase extends Orchestra
       'schema' => 'public',
       'sslmode' => 'prefer',
     ]);
+
+    // Setup snapshot path for testing
+    $app['config']->set('schema-guard.drift_detection.snapshot_path', database_path('schema-snapshots'));
   }
 }
