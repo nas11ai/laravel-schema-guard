@@ -16,7 +16,7 @@ use Mockery\MockInterface;
 class UnitTestCase extends Orchestra
 {
   public Migrator|MockInterface $migrator;
-  public MigrationRepository $repository;
+
   protected function setUp(): void
   {
     parent::setUp();
@@ -78,11 +78,5 @@ class UnitTestCase extends Orchestra
       'schema' => 'public',
       'sslmode' => 'prefer',
     ]);
-  }
-
-  protected function defineDatabaseMigrations()
-  {
-    // Menjalankan migrasi bawaan Laravel (membuat tabel migrations)
-    $this->loadLaravelMigrations();
   }
 }
