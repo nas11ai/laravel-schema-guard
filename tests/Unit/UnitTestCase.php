@@ -5,14 +5,18 @@ namespace Nas11ai\SchemaGuard\Tests\Unit;
 use Illuminate\Database\Migrations\Migrator;
 use Nas11ai\SchemaGuard\Infrastructure\Repositories\MigrationRepository;
 use Nas11ai\SchemaGuard\Infrastructure\Repositories\SchemaRepository;
+use Nas11ai\SchemaGuard\Domain\Services\MigrationAnalysisService;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Nas11ai\SchemaGuard\SchemaGuardServiceProvider;
 use Mockery\MockInterface;
 
 /**
  * @property Migrator|MockInterface $migrator
- * @property MigrationRepository $repository
+ * @property MigrationRepository&MockInterface $repository
  * @property SchemaRepository $schemaRepository
+ * 
+ * @property MigrationAnalysisService $migrationAnalysisService
+ * 
  * @property string $snapshotPath
  */
 
