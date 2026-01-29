@@ -24,6 +24,10 @@ class MigrationAnalysisService implements MigrationAnalyzer
    */
   public function analyze(string $migrationPath): array
   {
+    if (!file_exists($migrationPath)) {
+      return [];
+    }
+
     $content = file_get_contents($migrationPath);
     if ($content === false) {
       return [];
@@ -111,29 +115,29 @@ class MigrationAnalysisService implements MigrationAnalyzer
 
     // Pattern matching for different operations
     $patterns = [
-      // Drop operations
-      '/Schema::dropIfExists\([\'"](\w+)[\'"]\)/' => OperationType::DROP_TABLE_IF_EXISTS,
-      '/Schema::drop\([\'"](\w+)[\'"]\)/' => OperationType::DROP_TABLE,
-      '/->dropColumn\([\'"](\w+)[\'"]\)/' => OperationType::DROP_COLUMN,
-      '/->dropColumn\(\[(.*?)\]\)/' => OperationType::DROP_COLUMN,
-      '/->dropIndex\([\'"](\w+)[\'"]\)/' => OperationType::DROP_INDEX,
-      '/->dropForeign\([\'"](\w+)[\'"]\)/' => OperationType::DROP_FOREIGN_KEY,
-      '/->dropPrimary\(\)/' => OperationType::DROP_PRIMARY,
-      '/->dropUnique\([\'"](\w+)[\'"]\)/' => OperationType::DROP_UNIQUE,
+      // Drop operations - handle spaces around quotes
+      '/Schema::dropIfExists\(\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::DROP_TABLE_IF_EXISTS,
+      '/Schema::drop\(\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::DROP_TABLE,
+      '/->dropColumn\(\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::DROP_COLUMN,
+      '/->dropColumn\(\s*\[(.*?)\]\s*\)/' => OperationType::DROP_COLUMN,
+      '/->dropIndex\(\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::DROP_INDEX,
+      '/->dropForeign\(\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::DROP_FOREIGN_KEY,
+      '/->dropPrimary\(\s*\)/' => OperationType::DROP_PRIMARY,
+      '/->dropUnique\(\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::DROP_UNIQUE,
 
-      // Create operations
-      '/Schema::create\([\'"](\w+)[\'"]\)/' => OperationType::CREATE_TABLE,
+      // Create operations - handle spaces and multi-line
+      '/Schema::create\(\s*[\'"](\w+)[\'"]\s*,?\s*function/' => OperationType::CREATE_TABLE,
 
-      // Alter operations
-      '/->change\(\)/' => OperationType::CHANGE_COLUMN,
-      '/->renameColumn\([\'"](\w+)[\'"],\s*[\'"](\w+)[\'"]\)/' => OperationType::RENAME_COLUMN,
-      '/Schema::rename\([\'"](\w+)[\'"],\s*[\'"](\w+)[\'"]\)/' => OperationType::RENAME_TABLE,
+      // Alter operations - handle spaces around commas
+      '/->change\(\s*\)/' => OperationType::CHANGE_COLUMN,
+      '/->renameColumn\(\s*[\'"](\w+)[\'"]\s*,\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::RENAME_COLUMN,
+      '/Schema::rename\(\s*[\'"](\w+)[\'"]\s*,\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::RENAME_TABLE,
 
-      // Add operations
-      '/->foreign\([\'"](\w+)[\'"]\)/' => OperationType::ADD_FOREIGN_KEY,
-      '/->index\([\'"](\w+)[\'"]\)/' => OperationType::ADD_INDEX,
-      '/->unique\([\'"](\w+)[\'"]\)/' => OperationType::ADD_UNIQUE,
-      '/->primary\([\'"](\w+)[\'"]\)/' => OperationType::ADD_PRIMARY,
+      // Add operations - handle spaces
+      '/->foreign\(\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::ADD_FOREIGN_KEY,
+      '/->index\(\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::ADD_INDEX,
+      '/->unique\(\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::ADD_UNIQUE,
+      '/->primary\(\s*[\'"](\w+)[\'"]\s*\)/' => OperationType::ADD_PRIMARY,
     ];
 
     foreach ($patterns as $pattern => $operationType) {

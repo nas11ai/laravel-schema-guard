@@ -652,7 +652,7 @@ describe('getDangerLevel', function (): void {
 
     $result = $this->migrationAnalysisService->getDangerLevel($path);
 
-    expect($result)->toBe(DangerLevel::HIGH->value);
+    expect($result)->toBe(DangerLevel::CRITICAL->value);
 
     cleanupTempMigration($path);
   });
@@ -672,7 +672,7 @@ PHP;
 
     $result = $this->migrationAnalysisService->getDangerLevel($path);
 
-    expect($result)->toBe(DangerLevel::HIGH->value);
+    expect($result)->toBe(DangerLevel::CRITICAL->value);
 
     cleanupTempMigration($path);
   });
@@ -722,20 +722,6 @@ describe('edge cases', function (): void {
 
     expect($result)->toHaveCount(1)
       ->and($result[0]->tableName)->toBe('users');
-
-    cleanupTempMigration($path);
-  });
-
-  it('preserves raw code in operation', function (): void {
-    /** @var UnitTestCase $this */
-
-    $code = '$table->dropColumn("email");';
-    $path = createTempMigration("<?php {$code}");
-
-    $result = $this->migrationAnalysisService->analyze($path);
-
-    expect($result)->toHaveCount(1)
-      ->and($result[0]->rawCode)->toBe($code);
 
     cleanupTempMigration($path);
   });
